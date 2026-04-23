@@ -289,6 +289,13 @@ GOOGLE_MODEL_OPERATIONAL_GUIDANCE = (
 DEVELOPER_ROLE_MODELS = ("gpt-5", "codex")
 
 PLATFORM_HINTS = {
+    "rabbit_r1": (
+        "You are speaking to a Rabbit R1 device over a minimal bridge. "
+        "Keep replies short, plain text, and voice-friendly. Do not use markdown. "
+        "L1 supports text replies, and voice replies may be delivered automatically "
+        "after voice input. Do not promise images, documents, canvas control, or "
+        "other rich device actions unless the user explicitly confirms they are enabled."
+    ),
     "whatsapp": (
         "You are on a text messaging communication platform, WhatsApp. "
         "Please do not use markdown as it does not render. "

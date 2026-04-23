@@ -116,6 +116,14 @@ class TestGetConnectedPlatforms:
         )
         assert Platform.DINGTALK not in config.get_connected_platforms()
 
+    def test_rabbit_r1_recognised_via_token(self):
+        config = GatewayConfig(
+            platforms={
+                Platform.RABBIT_R1: PlatformConfig(enabled=True, token="r1-secret"),
+            },
+        )
+        assert Platform.RABBIT_R1 in config.get_connected_platforms()
+
 
 class TestSessionResetPolicy:
     def test_roundtrip(self):
@@ -184,6 +192,25 @@ class TestGatewayConfigRoundtrip:
 
 
 class TestLoadGatewayConfig:
+    def test_apply_env_overrides_rabbit_r1(self, monkeypatch):
+        monkeypatch.setenv("RABBIT_R1_TOKEN", "r1-secret")
+        monkeypatch.setenv("RABBIT_R1_HOST", "127.0.0.1")
+        monkeypatch.setenv("RABBIT_R1_PORT", "19001")
+        monkeypatch.setenv("RABBIT_R1_AUTO_APPROVE_PAIRING", "true")
+        monkeypatch.setenv("RABBIT_R1_DEFAULT_SESSION_KEY", "agent:main:test")
+
+        config = GatewayConfig()
+        _apply_env_overrides(config)
+
+        assert Platform.RABBIT_R1 in config.platforms
+        rc = config.platforms[Platform.RABBIT_R1]
+        assert rc.enabled is True
+        assert rc.token == "r1-secret"
+        assert rc.extra["host"] == "127.0.0.1"
+        assert rc.extra["port"] == 19001
+        assert rc.extra["auto_approve_pairing"] is True
+        assert rc.extra["default_session_key"] == "agent:main:test"
+
     def test_bridges_quick_commands_from_config_yaml(self, tmp_path, monkeypatch):
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()

@@ -48,6 +48,7 @@ def _normalize_unauthorized_dm_behavior(value: Any, default: str = "pair") -> st
 class Platform(Enum):
     """Supported messaging platforms."""
     LOCAL = "local"
+    RABBIT_R1 = "rabbit_r1"
     TELEGRAM = "telegram"
     DISCORD = "discord"
     WHATSAPP = "whatsapp"
@@ -270,6 +271,10 @@ class GatewayConfig:
         connected = []
         for platform, config in self.platforms.items():
             if not config.enabled:
+                continue
+            if platform == Platform.RABBIT_R1:
+                if config.token or config.extra.get("auth_token"):
+                    connected.append(platform)
                 continue
             # Weixin requires both a token and an account_id
             if platform == Platform.WEIXIN:
@@ -847,7 +852,28 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
 
 def _apply_env_overrides(config: GatewayConfig) -> None:
     """Apply environment variable overrides to config."""
-    
+    # Rabbit R1
+    rabbit_r1_token = os.getenv("RABBIT_R1_TOKEN", "").strip()
+    if rabbit_r1_token:
+        if Platform.RABBIT_R1 not in config.platforms:
+            config.platforms[Platform.RABBIT_R1] = PlatformConfig()
+        rabbit_cfg = config.platforms[Platform.RABBIT_R1]
+        rabbit_cfg.enabled = True
+        rabbit_cfg.token = rabbit_r1_token
+        rabbit_cfg.extra["auth_token"] = rabbit_r1_token
+        rabbit_cfg.extra["host"] = os.getenv("RABBIT_R1_HOST", "").strip() or "0.0.0.0"
+        try:
+            rabbit_cfg.extra["port"] = int(os.getenv("RABBIT_R1_PORT", "18789").strip() or "18789")
+        except ValueError:
+            logger.warning("RABBIT_R1_PORT must be an integer; using 18789")
+            rabbit_cfg.extra["port"] = 18789
+        rabbit_cfg.extra["auto_approve_pairing"] = os.getenv(
+            "RABBIT_R1_AUTO_APPROVE_PAIRING", "false"
+        ).lower() in ("true", "1", "yes")
+        default_session_key = os.getenv("RABBIT_R1_DEFAULT_SESSION_KEY", "").strip()
+        if default_session_key:
+            rabbit_cfg.extra["default_session_key"] = default_session_key
+
     # Telegram
     telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if telegram_token:

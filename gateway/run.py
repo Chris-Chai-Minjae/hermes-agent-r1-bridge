@@ -2785,6 +2785,13 @@ class GatewayRunner:
                 return None
             return SignalAdapter(config)
 
+        elif platform == Platform.RABBIT_R1:
+            from gateway.platforms.rabbit_r1 import RabbitR1Adapter, check_rabbit_r1_requirements
+            if not check_rabbit_r1_requirements():
+                logger.warning("Rabbit R1: aiohttp bridge dependencies not installed")
+                return None
+            return RabbitR1Adapter(config)
+
         elif platform == Platform.HOMEASSISTANT:
             from gateway.platforms.homeassistant import HomeAssistantAdapter, check_ha_requirements
             if not check_ha_requirements():
@@ -2906,7 +2913,7 @@ class GatewayRunner:
         # connection, so HA events are always authorized.
         # Webhook events are authenticated via HMAC signature validation in
         # the adapter itself — no user allowlist applies.
-        if source.platform in (Platform.HOMEASSISTANT, Platform.WEBHOOK):
+        if source.platform in (Platform.HOMEASSISTANT, Platform.WEBHOOK, Platform.RABBIT_R1):
             return True
 
         user_id = source.user_id
@@ -7688,7 +7695,7 @@ class GatewayRunner:
     # Platforms where /update is allowed.  ACP, API server, and webhooks are
     # programmatic interfaces that should not trigger system updates.
     _UPDATE_ALLOWED_PLATFORMS = frozenset({
-        Platform.TELEGRAM, Platform.DISCORD, Platform.SLACK, Platform.WHATSAPP,
+        Platform.RABBIT_R1, Platform.TELEGRAM, Platform.DISCORD, Platform.SLACK, Platform.WHATSAPP,
         Platform.SIGNAL, Platform.MATTERMOST, Platform.MATRIX,
         Platform.HOMEASSISTANT, Platform.EMAIL, Platform.SMS, Platform.DINGTALK,
         Platform.FEISHU, Platform.WECOM, Platform.WECOM_CALLBACK, Platform.WEIXIN, Platform.BLUEBUBBLES, Platform.QQBOT, Platform.LOCAL,
